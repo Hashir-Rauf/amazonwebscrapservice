@@ -1,4 +1,3 @@
-!pip freeze > requirements.txt
 from flask import Flask, request, jsonify
 from selenium import webdriver
 from bs4 import BeautifulSoup
