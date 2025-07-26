@@ -1,8 +1,6 @@
-
 from flask import Flask, request, jsonify
-from selenium import webdriver
+import requests
 from bs4 import BeautifulSoup
-import time
 
 app = Flask(__name__)
 
@@ -12,18 +10,17 @@ def scrape_amazon_product(url):
         if "amazon." not in url:
             return {"error": "URL must be from Amazon."}
 
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--no-sandbox')
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36")
+        # Set headers to mimic a real browser
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9"
+        }
 
-        driver = webdriver.Chrome(options=options)
-        driver.get(url)
-        time.sleep(3)
+        # Fetch the page content
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()  # Raise an exception for bad status codes
 
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        soup = BeautifulSoup(response.text, 'html.parser')
 
         # ✅ Check for cosmetic categories in breadcrumb
         breadcrumb = soup.find("ul", class_="a-unordered-list a-horizontal a-size-small")
@@ -31,7 +28,6 @@ def scrape_amazon_product(url):
             tag.get_text(strip=True) in ["Beauty & Personal Care", "Skin Care"]
             for tag in breadcrumb.find_all("a", class_="a-link-normal a-color-tertiary")
         ):
-            driver.quit()
             return {"error": "Product does not belong to a cosmetic category."}
 
         title = soup.find(id="productTitle")
@@ -51,14 +47,14 @@ def scrape_amazon_product(url):
                         break
                 break
 
-        driver.quit()
-
         return {
             "product_name": title.get_text(strip=True) if title else "N/A",
             "brand": brand if brand else "N/A",
             "ingredients": ingredients_list or "Not Found"
         }
 
+    except requests.RequestException as e:
+        return {"error": f"Request failed: {str(e)}"}
     except Exception as e:
         return {"error": str(e)}
 
