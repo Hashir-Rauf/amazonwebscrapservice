@@ -3,3 +3,4 @@ selenium==4.34.2
 beautifulsoup4==4.13.4
 requests==2.32.4
 flask-cors==2.1.2
+Werkzeug==2.1.2  # Downgrade Werkzeug to 2.1.2 for compatibility
