@@ -1,5 +1,7 @@
+!pip freeze > requirements.txt
 from flask import Flask, request, jsonify
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from bs4 import BeautifulSoup
 import time
 
 app = Flask(__name__)
@@ -10,21 +12,18 @@ def scrape_amazon_product(url):
         if "amazon." not in url:
             return {"error": "URL must be from Amazon."}
 
-        with sync_playwright() as p:
-            # Configure browser
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
-            )
-            page = context.new_page()
-            page.goto(url)
-            time.sleep(3)  # Wait for dynamic content to load
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36")
 
-            # Get page content
-            content = page.content()
-            browser.close()
+        driver = webdriver.Chrome(options=options)
+        driver.get(url)
+        time.sleep(3)
 
-        soup = BeautifulSoup(content, 'html.parser')
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
 
         # ✅ Check for cosmetic categories in breadcrumb
         breadcrumb = soup.find("ul", class_="a-unordered-list a-horizontal a-size-small")
@@ -32,6 +31,7 @@ def scrape_amazon_product(url):
             tag.get_text(strip=True) in ["Beauty & Personal Care", "Skin Care"]
             for tag in breadcrumb.find_all("a", class_="a-link-normal a-color-tertiary")
         ):
+            driver.quit()
             return {"error": "Product does not belong to a cosmetic category."}
 
         title = soup.find(id="productTitle")
@@ -51,6 +51,8 @@ def scrape_amazon_product(url):
                         break
                 break
 
+        driver.quit()
+
         return {
             "product_name": title.get_text(strip=True) if title else "N/A",
             "brand": brand if brand else "N/A",
@@ -60,7 +62,7 @@ def scrape_amazon_product(url):
     except Exception as e:
         return {"error": str(e)}
 
-@app.route('/scrape', methods=['POST'])
+@app.route('/scrape', methods=['POST','GET'])
 def scrape():
     data = request.get_json()
     url = data.get("url")
@@ -71,4 +73,4 @@ def scrape():
     return jsonify(result)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
