@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS to enable cross-origin requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import time
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes (you can customize this if needed)
 
 # Function to scrape Amazon product data
 def scrape_amazon_product(url):
