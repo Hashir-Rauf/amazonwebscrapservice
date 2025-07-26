@@ -1,6 +1,6 @@
-Flask==2.1.2
+Flask==2.1.2       # Keep Flask version as is
 selenium==4.34.2
 beautifulsoup4==4.13.4
 requests==2.32.4
-flask-cors==2.1.2
-Werkzeug==2.1.2  # Downgrade Werkzeug to 2.1.2 for compatibility
+flask-cors==3.0.10  # Upgrade flask-cors to a version compatible with Python 3.10+
+Werkzeug==2.1.2
