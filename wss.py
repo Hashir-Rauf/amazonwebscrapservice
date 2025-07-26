@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
-import requests
-from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
+import time
 
 app = Flask(__name__)
 
@@ -10,17 +10,21 @@ def scrape_amazon_product(url):
         if "amazon." not in url:
             return {"error": "URL must be from Amazon."}
 
-        # Set headers to mimic a real browser
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-            "Accept-Language": "en-US,en;q=0.9"
-        }
+        with sync_playwright() as p:
+            # Configure browser
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
+            page.goto(url)
+            time.sleep(3)  # Wait for dynamic content to load
 
-        # Fetch the page content
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()  # Raise an exception for bad status codes
+            # Get page content
+            content = page.content()
+            browser.close()
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(content, 'html.parser')
 
         # ✅ Check for cosmetic categories in breadcrumb
         breadcrumb = soup.find("ul", class_="a-unordered-list a-horizontal a-size-small")
@@ -53,8 +57,6 @@ def scrape_amazon_product(url):
             "ingredients": ingredients_list or "Not Found"
         }
 
-    except requests.RequestException as e:
-        return {"error": f"Request failed: {str(e)}"}
     except Exception as e:
         return {"error": str(e)}
 
