@@ -35,7 +35,7 @@ def scrape_amazon_product(url):
         # Check for the cosmetic category in breadcrumb
         breadcrumb = soup.find("ul", class_="a-unordered-list a-horizontal a-size-small")
         if not breadcrumb or not any(
-            tag.get_text(strip=True) in ["Beauty & Personal Care", "Skin Care"]
+            tag.get_text(strip=True) in ["Beauty & Personal Care"]
             for tag in breadcrumb.find_all("a", class_="a-link-normal a-color-tertiary")
         ):
             driver.quit()
