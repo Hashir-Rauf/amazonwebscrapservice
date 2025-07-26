@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import time
-
+import os
 app = Flask(__name__)
 
 def scrape_amazon_product(url):
